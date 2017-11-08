@@ -128,20 +128,20 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\CPSC587 ASG3\CPSC587ASG3\OpenGLExample\camera.h" />
-    <ClInclude Include="..\..\CPSC587 ASG3\CPSC587ASG3\OpenGLExample\Mass.h" />
-    <ClInclude Include="..\..\CPSC587 ASG3\CPSC587ASG3\OpenGLExample\Spring.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="..\..\CPSC587 ASG3\CPSC587ASG3\OpenGLExample\camera.cpp" />
-    <ClCompile Include="..\..\CPSC587 ASG3\CPSC587ASG3\OpenGLExample\main.cpp" />
-    <ClCompile Include="..\..\CPSC587 ASG3\CPSC587ASG3\OpenGLExample\Mass.cpp" />
-    <ClCompile Include="..\..\CPSC587 ASG3\CPSC587ASG3\OpenGLExample\Spring.cpp" />
+    <ClCompile Include="camera.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="Mass.cpp" />
+    <ClCompile Include="Spring.cpp" />
     <ClCompile Include="src\glad.c" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\fragment.glsl" />
     <None Include="Shaders\vertex.glsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="camera.h" />
+    <ClInclude Include="Mass.h" />
+    <ClInclude Include="Spring.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
