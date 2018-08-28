@@ -58,7 +58,7 @@ float sizeOfCube = 4.0f;
 float sizeOfCloth = 20.0f;
 int numSprings = 6;
 
-Camera* activeCamera;
+camera* activeCamera;
 
 GLFWwindow* window = 0;
 
@@ -77,64 +77,105 @@ void ErrorCallback(int error, const char* description)
 // handles keyboard input events
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, GL_TRUE);
-    if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
-        {
-			if(!play)
-				play = true;
-			else
-				play = false;
-		}
-	
-   if (key == GLFW_KEY_LEFT && action == GLFW_PRESS)
+	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+		glfwSetWindowShouldClose(window, GL_TRUE);
+	if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
 	{
-	
+		play = !play;
+	}
+	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+		glfwSetWindowShouldClose(window, true);
+	if (key == GLFW_KEY_W && (action == GLFW_REPEAT || action == GLFW_PRESS))
+		activeCamera->moveCameraPositionForward();
+	if (key == GLFW_KEY_S && (action == GLFW_REPEAT || action == GLFW_PRESS))
+		activeCamera->moveCameraPositionBackwards();
+	if (key == GLFW_KEY_A && (action == GLFW_REPEAT || action == GLFW_PRESS))
+		activeCamera->moveCameraPositionLeft();
+	if (key == GLFW_KEY_D && (action == GLFW_REPEAT || action == GLFW_PRESS))
+		activeCamera->moveCameraPositionRight();
+
+	activeCamera->updateCameraView();
+
+	if (key == GLFW_KEY_LEFT && action == GLFW_PRESS)
+	{
+
 		scene += 1;
-		if(scene == 4)
+		if (scene == 4)
 			scene = 0;
-			
-		if(!springChain)
+
+		if (!springChain)
 			springChain = true;
 		else
 			springChain = false;
-		
+
 		initSpringSys = false;
 		//initSpringSys = false;
 	}
-}
 
+}
+bool mouseButtonOnePressed = false;
+bool isFirstMousePosition = true;
 void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
-	if( (action == GLFW_PRESS) || (action == GLFW_RELEASE) ){
-		if(button == GLFW_MOUSE_BUTTON_LEFT)
-			leftmousePressed = !leftmousePressed;
-		else if(button == GLFW_MOUSE_BUTTON_RIGHT)
-			rightmousePressed = !rightmousePressed;
-	}
-}
 
-void mousePosCallback(GLFWwindow* window, double xpos, double ypos)
+	if (button == GLFW_MOUSE_BUTTON_LEFT && (action == GLFW_PRESS || action == GLFW_REPEAT))
+	{
+		mouseButtonOnePressed = true;
+	}
+	else
+		mouseButtonOnePressed = false;
+
+}
+float lastX, lastY, yaw, pitch;
+void mousePosCallback(GLFWwindow* window, double xPosition, double yPosition)
 {
-	int vp[4];
-	glGetIntegerv(GL_VIEWPORT, vp);
 
-	vec2 newPos = vec2(xpos/(double)vp[2], -ypos/(double)vp[3])*2.f - vec2(1.f);
-
-	vec2 diff = newPos - mousePos;
-	if(leftmousePressed){
-		activeCamera->trackballRight(-diff.x);
-		activeCamera->trackballUp(-diff.y);
+	if (isFirstMousePosition)
+	{
+		lastX = xPosition;
+		lastY = yPosition;
+		isFirstMousePosition = false;
 	}
-	else if(rightmousePressed){
-		float zoomBase = (diff.y > 0) ? 1.f/2.f : 2.f;
+	if (mouseButtonOnePressed)
+	{
+		float xOffset = xPosition - lastX;
+		float yOffset = lastY - yPosition;
+		lastX = xPosition;
+		lastY = yPosition;
 
-		activeCamera->zoom(pow(zoomBase, abs(diff.y)));
+		float sensitivity = 0.5f;
+		xOffset *= sensitivity;
+		yOffset *= sensitivity;
+
+		yaw += xOffset;
+		pitch += yOffset;
+
+		if (pitch > 89.0f)
+			pitch = 89.0f;
+		if (pitch < -89.0f)
+			pitch = -89.0f;
+
+		vec3 target = vec3(0.0f, 0.0f, -3.0f);
+		target.x = cos(radians(yaw)) * cos(radians(pitch));
+		target.y = sin(radians(pitch));
+		target.z = sin(radians(yaw)) * cos(radians(pitch));
+
+		activeCamera->updateCameraTarget(normalize(target));
+		activeCamera->updateCameraView();
 	}
 
-	mousePos = newPos;
+
 }
-
+float fov = 45.0f;
+void scrollCallback(GLFWwindow* window, double xoffset, double yoffset)
+{
+	if (fov >= 1.0f && fov <= 90.0f)
+		fov -= yoffset;
+	if (fov <= 1.0f)
+		fov = 1.0f;
+	if (fov >= 90.0f)
+		fov = 90.0f;
+}
 void resizeCallback(GLFWwindow* window, int width, int height)
 {
 	int vp[4];
@@ -861,10 +902,12 @@ int main(int argc, char *argv[])
 
 	vector<Spring*> multipleSprings;
 
-	Camera cam = Camera(vec3(0, 0, -1), vec3(0, 0, 20));
+	camera cam;
 	activeCamera = &cam;
+	mat4 perspectiveMatrix = perspective(radians(fov), 1.f, 0.1f, 300.f);
+	mat4 V;
 	//float fovy, float aspect, float zNear, float zFar
-	mat4 perspectiveMatrix = perspective(radians(80.f), 1.f, 0.1f, 400.f);
+	//mat4 perspectiveMatrix = perspective(radians(80.f), 1.f, 0.1f, 400.f);
 
 
 
@@ -990,10 +1033,14 @@ int main(int argc, char *argv[])
 		
 		dt = 0.004f;
 		dt += extraTime;
-	
+
+		V = cam.getCameraView();
+		perspectiveMatrix = perspective(radians(fov), 1.f, 0.1f, 300.f);
+
 		if(play)
 			{
 				float timeStep = 1.0f / 1000.0f;
+				
 				
 				while (dt >= timeStep)
 					{
@@ -1090,15 +1137,15 @@ int main(int argc, char *argv[])
 			
 			}
 
-			loadUniforms(program, winRatio*perspectiveMatrix*cam.getMatrix(), mat4(1.0f));
+			loadUniforms(program, winRatio*perspectiveMatrix*V, mat4(1.0f));
 			renderLine(vao, 0, springInd.size(), program, vbo, springs, colorSpring, springInd); 
 
-			loadUniforms(program, winRatio*perspectiveMatrix*cam.getMatrix(), mat4(1.0f));
+			loadUniforms(program, winRatio*perspectiveMatrix*V, mat4(1.0f));
 			renderPoints(vao, 0, massInd.size(), program, vbo, masses, colorMass, massInd);
 			
 			if(isCube)
 			{
-				loadUniforms(program, winRatio*perspectiveMatrix*cam.getMatrix(), mat4(1.0f));
+				loadUniforms(program, winRatio*perspectiveMatrix*V, mat4(1.0f));
 				renderPlane(vao, 0, planeInd.size(), program, vbo, plane, planeColor, planeInd);
 			}
 			
