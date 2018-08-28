@@ -1031,7 +1031,7 @@ int main(int argc, char *argv[])
 		glClearColor(0.5, 0.5, 0.5, 1.0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	//Clear color and depth buffers (Haven't covered yet)
 		
-		dt = 0.004f;
+		dt = 0.001f;
 		dt += extraTime;
 
 		V = cam.getCameraView();
